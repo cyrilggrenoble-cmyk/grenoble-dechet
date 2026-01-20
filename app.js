@@ -8,7 +8,7 @@ const SECTEURS = [
   "Grenoble – Secteur 3",
   "Grenoble – Secteur 4",
   "Grenoble – Secteur 5",
-  "Grenoble - Secteur 6",
+  "Grenoble – Secteur 6",
 ];
 
 const GROUPS = [
