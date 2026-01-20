@@ -8,6 +8,7 @@ const SECTEURS = [
   "Grenoble – Secteur 3",
   "Grenoble – Secteur 4",
   "Grenoble – Secteur 5",
+  "Grenoble - Secteur 6",
 ];
 
 const GROUPS = [
@@ -209,7 +210,7 @@ btnExport.addEventListener("click", () => {
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-  a.download = "collectes_grenoble.csv";
+a.download = "BILAN_PU_collectes.csv";
   document.body.appendChild(a);
   a.click();
   a.remove();
