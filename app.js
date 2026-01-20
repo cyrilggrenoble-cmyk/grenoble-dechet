@@ -344,30 +344,76 @@ function renderHistory() {
 }
 
 function buildCSV(collectes) {
-  const headers = [
-    "collecte_id","agent","secteur","date_debut","date_fin","total","statut"
-  ];
+  // Export OFFICIEL "Grille PU" (1 ligne = 1 collecte)
+  // Conforme à l'ordre du fichier: Grilles Relevé_Interne PU2026.ods
 
-  // Add item columns
-  const itemIds = [];
-  GROUPS.forEach(g => g.items.forEach(it => itemIds.push(it.id)));
-  const cols = headers.concat(itemIds);
+  const cols = [
+    "Mois",
+    "Année",
+    "secteur évalué",
+    "Nom évaluateur",
+    "date et heure de l'évaluation",
+    "Durée (min)",
+
+    // Détritus (ordre exact de la grille)
+    "déjections canines",
+    "dépôts sauvages",
+    "sacs d'ordures ménagères",
+    "papiers, emballages, journaux",
+    "petits papiers",
+    "verre et débris de verre",
+    "mégots",
+    "déchets alimentaires organiques",
+    "cartouche protoxyde",
+    "souillures adhérentes (taches)",
+    "feuilles mortes"
+  ];
 
   const lines = [cols.join(",")];
 
-  collectes.forEach(c => {
-    const base = [
-      c.collecte_id,
-      c.agent,
-      c.secteur,
-      c.date_debut,
-      c.date_fin || "",
-      String(c.total || 0),
-      c.statut || ""
+  collectes.forEach((c) => {
+    const d0 = c.date_debut ? new Date(c.date_debut) : null;
+    const mois = d0 ? String(d0.getMonth() + 1).padStart(2, "0") : "";
+    const annee = d0 ? String(d0.getFullYear()) : "";
+    const dateFR = d0 ? d0.toLocaleString("fr-FR") : "";
+
+    // Durée en minutes (si dispo). Sinon, on calcule si date_fin existe.
+    let dureeMin = "";
+    if (typeof c.duree_min === "number") {
+      dureeMin = String(c.duree_min);
+    } else if (c.date_debut && c.date_fin) {
+      const d1 = new Date(c.date_fin);
+      const mins = Math.max(0, Math.round((d1 - d0) / 60000));
+      dureeMin = String(mins);
+    }
+
+    // Mapping IDs app -> intitulés grille
+    const details = c.details || {};
+    const get = (id) => String(details[id] ?? 0);
+
+    const row = [
+      mois,
+      annee,
+      c.secteur || "",
+      c.agent || "",
+      dateFR,
+      dureeMin,
+
+      // Détritus (ordre exact)
+      get("dejections_canines"),
+      get("depots_sauvages"),
+      get("sacs_ordures"),
+      get("papiers_a5"),
+      get("petits_papiers"),
+      get("verre_debris"),
+      get("megots"),
+      get("dechets_alimentaires"),
+      get("protoxyde"),
+      get("souillures"),
+      get("feuilles")
     ].map(csvCell);
 
-    const detailCells = itemIds.map(id => csvCell(String((c.details && c.details[id]) || 0)));
-    lines.push(base.concat(detailCells).join(","));
+    lines.push(row.join(","));
   });
 
   return lines.join("\n");
