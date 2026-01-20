@@ -1,0 +1,753 @@
+<!doctype html>
+<html lang="fr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <title>Comptage Déchets – Grenoble</title>
+
+  <link rel="manifest" href="manifest.json">
+  <meta name="theme-color" content="#ffffff"/>
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <div class="dot"></div>
+      <div>
+        <div class="title">Comptage déchets</div>
+        <div class="subtitle">Grenoble – prototype</div>
+      </div>
+    </div>
+    <button id="btnSettings" class="iconBtn" aria-label="Paramètres">⚙️</button>
+  </header>
+
+  <main class="container">
+    <!-- VIEW: HOME -->
+    <section id="viewHome" class="view">
+      <div class="card">
+        <div class="h">Agent</div>
+        <div class="row">
+          <input id="agentInput" class="input" placeholder="Nom Prénom (ou ID)" autocomplete="off" />
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="h">Secteur</div>
+        <div class="row">
+          <select id="secteurSelect" class="select"></select>
+        </div>
+        <div class="meta" id="datetimeMeta"></div>
+      </div>
+
+      <button id="btnStart" class="btn primary">Démarrer une collecte</button>
+
+      <div class="split">
+        <button id="btnHistory" class="btn">Historique</button>
+        <button id="btnExport" class="btn">Exporter CSV</button>
+      </div>
+
+      <p class="hint">
+        Astuce iPhone : ouvre dans Safari → Partager → “Ajouter à l’écran d’accueil”.
+      </p>
+    </section>
+
+    <!-- VIEW: COUNT -->
+    <section id="viewCount" class="view hidden">
+      <div class="totalBox">
+        <div class="totalLabel">TOTAL DÉCHETS</div>
+        <div id="totalValue" class="totalValue">0</div>
+      </div>
+
+      <div id="groups"></div>
+
+      <div class="bottomBar">
+        <button id="btnEnd" class="btn primary">Terminer la collecte</button>
+      </div>
+    </section>
+
+    <!-- VIEW: REVIEW -->
+    <section id="viewReview" class="view hidden">
+      <div class="card">
+        <div class="h">Récap collecte</div>
+        <div id="reviewMeta" class="meta"></div>
+      </div>
+
+      <div class="card">
+        <div class="h">Détails</div>
+        <div id="reviewDetails" class="list"></div>
+        <div class="divider"></div>
+        <div class="rowBetween">
+          <div class="strong">TOTAL</div>
+          <div id="reviewTotal" class="strong"></div>
+        </div>
+      </div>
+
+      <div class="split">
+        <button id="btnBackToCount" class="btn">Retour</button>
+        <button id="btnSave" class="btn primary">Enregistrer</button>
+      </div>
+    </section>
+
+    <!-- VIEW: HISTORY -->
+    <section id="viewHistory" class="view hidden">
+      <div class="card">
+        <div class="h">Historique</div>
+        <div id="historyList" class="list"></div>
+      </div>
+      <button id="btnBackHome" class="btn">Retour accueil</button>
+    </section>
+
+    <!-- MODAL: SETTINGS -->
+    <div id="modal" class="modal hidden" role="dialog" aria-modal="true">
+      <div class="modalCard">
+        <div class="rowBetween">
+          <div class="h">Paramètres</div>
+          <button id="btnCloseModal" class="iconBtn" aria-label="Fermer">✖️</button>
+        </div>
+        <div class="divider"></div>
+        <div class="meta">
+          - Données stockées localement sur ce téléphone.<br/>
+          - Prototype PWA (pas de serveur pour l’instant).
+        </div>
+
+        <button id="btnReset" class="btn danger">Réinitialiser les données</button>
+      </div>
+    </div>
+  </main>
+
+  <script src="app.js"></script>
+</body>
+</html>
+:root{
+  --bg:#f6f7f9;
+  --card:#ffffff;
+  --text:#111827;
+  --muted:#6b7280;
+  --border:#e5e7eb;
+  --primary:#16a34a;
+  --danger:#dc2626;
+  --shadow: 0 8px 20px rgba(0,0,0,.06);
+  --radius: 16px;
+}
+
+*{box-sizing:border-box}
+body{
+  margin:0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Arial, sans-serif;
+  background:var(--bg);
+  color:var(--text);
+}
+
+.topbar{
+  position:sticky; top:0;
+  display:flex; align-items:center; justify-content:space-between;
+  padding:12px 14px;
+  background:rgba(246,247,249,.9);
+  backdrop-filter: blur(10px);
+  border-bottom:1px solid var(--border);
+}
+
+.brand{display:flex; gap:10px; align-items:center;}
+.dot{width:14px;height:14px;border-radius:50%;background:var(--primary);}
+.title{font-weight:800; font-size:16px; line-height:1.2}
+.subtitle{font-size:12px;color:var(--muted); line-height:1.2}
+
+.container{max-width:720px;margin:0 auto;padding:14px 14px 90px;}
+.view{display:block}
+.hidden{display:none}
+
+.card{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  padding:14px;
+  box-shadow: var(--shadow);
+  margin-bottom:12px;
+}
+.h{font-weight:800; margin-bottom:10px;}
+.meta{color:var(--muted); font-size:13px; line-height:1.4}
+.hint{color:var(--muted); font-size:13px; margin-top:12px}
+
+.row{display:flex; gap:10px; align-items:center;}
+.rowBetween{display:flex; align-items:center; justify-content:space-between; gap:10px;}
+.strong{font-weight:800}
+
+.input,.select{
+  width:100%;
+  padding:12px 12px;
+  border:1px solid var(--border);
+  border-radius:12px;
+  font-size:16px;
+  background:#fff;
+}
+
+.btn{
+  width:100%;
+  border:none;
+  border-radius:14px;
+  padding:12px 14px;
+  font-size:16px;
+  font-weight:700;
+  background:#fff;
+  border:1px solid var(--border);
+  box-shadow: var(--shadow);
+}
+.btn:active{transform: scale(.99)}
+.btn.primary{background:var(--primary); color:#fff; border-color:var(--primary)}
+.btn.danger{background:var(--danger); color:#fff; border-color:var(--danger)}
+
+.split{display:flex; gap:10px}
+.split .btn{flex:1}
+
+.iconBtn{
+  border:none;
+  background:transparent;
+  font-size:18px;
+  padding:8px;
+  border-radius:10px;
+}
+.iconBtn:active{background:rgba(0,0,0,.06)}
+
+.totalBox{
+  background:var(--card);
+  border:1px solid var(--border);
+  border-radius:var(--radius);
+  box-shadow: var(--shadow);
+  padding:14px;
+  margin-bottom:12px;
+  text-align:center;
+}
+.totalLabel{color:var(--muted); font-weight:800; letter-spacing:.04em; font-size:12px}
+.totalValue{font-weight:900; font-size:40px; margin-top:6px}
+
+.group{
+  border-radius:var(--radius);
+  border:1px solid var(--border);
+  overflow:hidden;
+  box-shadow: var(--shadow);
+  margin-bottom:12px;
+}
+.groupHeader{
+  padding:12px 14px;
+  font-weight:900;
+  display:flex; align-items:center; justify-content:space-between;
+}
+.groupBody{background:#fff; padding:10px 10px 4px}
+
+.item{
+  display:flex; align-items:center; justify-content:space-between;
+  padding:10px 8px;
+  border-top:1px solid var(--border);
+  gap:10px;
+}
+.item:first-child{border-top:none}
+.itemLeft{min-width:0}
+.itemName{font-weight:800}
+.itemUnit{font-size:12px; color:var(--muted); margin-top:2px}
+
+.counter{
+  display:flex; align-items:center; gap:10px;
+  flex-shrink:0;
+}
+.countVal{min-width:26px; text-align:center; font-weight:900; font-size:18px}
+
+.pillBtn{
+  width:44px; height:44px;
+  border-radius:14px;
+  border:1px solid var(--border);
+  background:#fff;
+  font-size:20px;
+  font-weight:900;
+  box-shadow: var(--shadow);
+}
+.pillBtn:active{transform: scale(.98)}
+.pillBtn.minus{color:#111}
+.pillBtn.plus{color:var(--primary)}
+
+.bottomBar{
+  position:fixed;
+  left:0; right:0; bottom:0;
+  padding:12px 14px;
+  background:rgba(246,247,249,.92);
+  border-top:1px solid var(--border);
+  backdrop-filter: blur(10px);
+}
+
+.list{display:flex; flex-direction:column; gap:8px}
+.listItem{
+  padding:10px 10px;
+  border:1px solid var(--border);
+  border-radius:14px;
+  background:#fff;
+}
+.small{font-size:12px;color:var(--muted)}
+.divider{height:1px; background:var(--border); margin:12px 0}
+
+.modal{
+  position:fixed; inset:0;
+  background:rgba(0,0,0,.25);
+  display:flex; align-items:flex-end; justify-content:center;
+  padding:14px;
+}
+.modalCard{
+  width:100%;
+  max-width:720px;
+  background:#fff;
+  border-radius:20px;
+  padding:14px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25);
+}
+/* Comptage Déchets – PWA prototype (local only) */
+
+const STORAGE_KEY = "grenoble_dechets_v09";
+
+const SECTEURS = [
+  "Grenoble – Secteur 1",
+  "Grenoble – Secteur 2",
+  "Grenoble – Secteur 3",
+  "Grenoble – Centre-ville",
+  "Grenoble – Presqu'île",
+];
+
+const GROUPS = [
+  {
+    id: "dejections",
+    title: "Déjections & Dépôts",
+    tone: "#f6d8b8",
+    items: [
+      { id: "dejections_canines", name: "Déjections canines", unit: "1 unité = 1 crotte" },
+      { id: "depots_sauvages", name: "Dépôts sauvages", unit: "1 unité = 1 dépôt" },
+      { id: "sacs_ordures", name: "Sacs d’ordures", unit: "1 unité = 1 sac" },
+    ],
+  },
+  {
+    id: "papiers",
+    title: "Papiers",
+    tone: "#dbeafe",
+    items: [
+      { id: "papiers_a5", name: "Papiers / journaux > A5", unit: "1 unité = 10 papiers" },
+      { id: "petits_papiers", name: "Petits papiers < A5", unit: "1 unité = 10 papiers" },
+    ],
+  },
+  {
+    id: "verre_megots",
+    title: "Verre & Mégots",
+    tone: "#dcfce7",
+    items: [
+      { id: "verre_debris", name: "Verre & débris", unit: "1 unité = 1 poignée" },
+      { id: "megots", name: "Mégots", unit: "1 unité = 10 mégots / m²" },
+    ],
+  },
+  {
+    id: "alimentaire_chimique",
+    title: "Alimentaire & Chimique",
+    tone: "#fde68a",
+    items: [
+      { id: "dechets_alimentaires", name: "Déchets alimentaires", unit: "1 unité = 1 tas" },
+      { id: "protoxyde", name: "Cartouches protoxyde", unit: "1 unité = 1 cartouche" },
+    ],
+  },
+  {
+    id: "sols_vegetaux",
+    title: "Sols & Végétaux",
+    tone: "#e9d5ff",
+    items: [
+      { id: "souillures", name: "Souillures adhérentes", unit: "1 unité = 20x20 cm" },
+      { id: "feuilles", name: "Feuilles mortes", unit: "1 unité = 1 m²" },
+    ],
+  },
+];
+
+function uid() {
+  // simple unique id (not crypto)
+  return "c_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { agent: "", collectes: [] };
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return { agent: "", collectes: [] };
+    parsed.collectes ||= [];
+    parsed.agent ||= "";
+    return parsed;
+  } catch {
+    return { agent: "", collectes: [] };
+  }
+}
+
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState();
+
+let current = null; // current collecte draft
+
+// Elements
+const viewHome = document.getElementById("viewHome");
+const viewCount = document.getElementById("viewCount");
+const viewReview = document.getElementById("viewReview");
+const viewHistory = document.getElementById("viewHistory");
+
+const agentInput = document.getElementById("agentInput");
+const secteurSelect = document.getElementById("secteurSelect");
+const datetimeMeta = document.getElementById("datetimeMeta");
+
+const btnStart = document.getElementById("btnStart");
+const btnHistory = document.getElementById("btnHistory");
+const btnExport = document.getElementById("btnExport");
+
+const groupsEl = document.getElementById("groups");
+const totalValue = document.getElementById("totalValue");
+const btnEnd = document.getElementById("btnEnd");
+
+const reviewMeta = document.getElementById("reviewMeta");
+const reviewDetails = document.getElementById("reviewDetails");
+const reviewTotal = document.getElementById("reviewTotal");
+const btnBackToCount = document.getElementById("btnBackToCount");
+const btnSave = document.getElementById("btnSave");
+
+const historyList = document.getElementById("historyList");
+const btnBackHome = document.getElementById("btnBackHome");
+
+const modal = document.getElementById("modal");
+const btnSettings = document.getElementById("btnSettings");
+const btnCloseModal = document.getElementById("btnCloseModal");
+const btnReset = document.getElementById("btnReset");
+
+// Init UI
+agentInput.value = state.agent || "";
+SECTEURS.forEach(s => {
+  const opt = document.createElement("option");
+  opt.value = s;
+  opt.textContent = s;
+  secteurSelect.appendChild(opt);
+});
+datetimeMeta.textContent = new Date().toLocaleString("fr-FR");
+
+renderGroups();
+updateTotal();
+
+// Service worker
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+}
+
+function show(view) {
+  [viewHome, viewCount, viewReview, viewHistory].forEach(v => v.classList.add("hidden"));
+  view.classList.remove("hidden");
+}
+
+function openModal() { modal.classList.remove("hidden"); }
+function closeModal() { modal.classList.add("hidden"); }
+
+btnSettings.addEventListener("click", openModal);
+btnCloseModal.addEventListener("click", closeModal);
+modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+
+btnReset.addEventListener("click", () => {
+  if (!confirm("Réinitialiser toutes les données locales ?")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state = { agent: "", collectes: [] };
+  current = null;
+  agentInput.value = "";
+  secteurSelect.selectedIndex = 0;
+  closeModal();
+  show(viewHome);
+});
+
+btnStart.addEventListener("click", () => {
+  const agent = agentInput.value.trim();
+  if (!agent) {
+    alert("Merci de renseigner l’agent.");
+    return;
+  }
+  state.agent = agent;
+  saveState(state);
+
+  current = {
+    collecte_id: uid(),
+    agent,
+    secteur: secteurSelect.value,
+    date_debut: new Date().toISOString(),
+    date_fin: null,
+    details: {},
+  };
+
+  // init counts
+  GROUPS.forEach(g => g.items.forEach(it => (current.details[it.id] = 0)));
+
+  updateTotal();
+  show(viewCount);
+});
+
+btnEnd.addEventListener("click", () => {
+  if (!current) return;
+  current.date_fin = new Date().toISOString();
+  showReview();
+  show(viewReview);
+});
+
+btnBackToCount.addEventListener("click", () => show(viewCount));
+
+btnSave.addEventListener("click", () => {
+  if (!current) return;
+
+  const total = computeTotal(current.details);
+  const collecte = {
+    collecte_id: current.collecte_id,
+    agent: current.agent,
+    secteur: current.secteur,
+    date_debut: current.date_debut,
+    date_fin: current.date_fin,
+    total,
+    details: current.details,
+    statut: "LOCAL", // future: EN_ATTENTE / SYNC_OK
+  };
+
+  state.collectes.unshift(collecte);
+  saveState(state);
+
+  current = null;
+  alert("Collecte enregistrée (local).");
+  show(viewHome);
+});
+
+btnHistory.addEventListener("click", () => {
+  renderHistory();
+  show(viewHistory);
+});
+
+btnBackHome.addEventListener("click", () => show(viewHome));
+
+btnExport.addEventListener("click", () => {
+  const csv = buildCSV(state.collectes);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "collectes_grenoble.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+function renderGroups() {
+  groupsEl.innerHTML = "";
+  GROUPS.forEach(group => {
+    const wrap = document.createElement("div");
+    wrap.className = "group";
+
+    const header = document.createElement("div");
+    header.className = "groupHeader";
+    header.style.background = group.tone;
+    header.innerHTML = `<div>${group.title}</div><div class="small">➕ / ➖</div>`;
+    wrap.appendChild(header);
+
+    const body = document.createElement("div");
+    body.className = "groupBody";
+
+    group.items.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "item";
+
+      const left = document.createElement("div");
+      left.className = "itemLeft";
+      left.innerHTML = `<div class="itemName">${item.name}</div><div class="itemUnit">${item.unit}</div>`;
+
+      const counter = document.createElement("div");
+      counter.className = "counter";
+
+      const minus = document.createElement("button");
+      minus.className = "pillBtn minus";
+      minus.textContent = "−";
+      minus.addEventListener("click", () => change(item.id, -1));
+
+      const val = document.createElement("div");
+      val.className = "countVal";
+      val.id = `val_${item.id}`;
+      val.textContent = "0";
+
+      const plus = document.createElement("button");
+      plus.className = "pillBtn plus";
+      plus.textContent = "+";
+      plus.addEventListener("click", () => change(item.id, +1));
+
+      counter.appendChild(minus);
+      counter.appendChild(val);
+      counter.appendChild(plus);
+
+      row.appendChild(left);
+      row.appendChild(counter);
+      body.appendChild(row);
+    });
+
+    wrap.appendChild(body);
+    groupsEl.appendChild(wrap);
+  });
+}
+
+function change(itemId, delta) {
+  if (!current) return;
+  const next = Math.max(0, (current.details[itemId] || 0) + delta);
+  current.details[itemId] = next;
+  const el = document.getElementById(`val_${itemId}`);
+  if (el) el.textContent = String(next);
+  updateTotal();
+  // little haptic (iOS)
+  if (navigator.vibrate) navigator.vibrate(10);
+}
+
+function computeTotal(details) {
+  return Object.values(details).reduce((a, b) => a + (Number(b) || 0), 0);
+}
+
+function updateTotal() {
+  const total = current ? computeTotal(current.details) : 0;
+  totalValue.textContent = String(total);
+}
+
+function showReview() {
+  if (!current) return;
+
+  const d0 = new Date(current.date_debut);
+  const d1 = new Date(current.date_fin || current.date_debut);
+  const minutes = Math.max(0, Math.round((d1 - d0) / 60000));
+
+  reviewMeta.innerHTML = `
+    <div><span class="strong">Agent :</span> ${escapeHtml(current.agent)}</div>
+    <div><span class="strong">Secteur :</span> ${escapeHtml(current.secteur)}</div>
+    <div><span class="strong">Début :</span> ${d0.toLocaleString("fr-FR")}</div>
+    <div><span class="strong">Durée :</span> ${minutes} min</div>
+  `;
+
+  reviewDetails.innerHTML = "";
+  GROUPS.forEach(g => g.items.forEach(it => {
+    const q = current.details[it.id] || 0;
+    if (q === 0) return;
+    const li = document.createElement("div");
+    li.className = "listItem";
+    li.innerHTML = `<div class="rowBetween"><div>${escapeHtml(it.name)}</div><div class="strong">${q}</div></div>
+                    <div class="small">${escapeHtml(it.unit)}</div>`;
+    reviewDetails.appendChild(li);
+  }));
+
+  const total = computeTotal(current.details);
+  reviewTotal.textContent = String(total);
+}
+
+function renderHistory() {
+  historyList.innerHTML = "";
+  if (!state.collectes.length) {
+    historyList.innerHTML = `<div class="meta">Aucune collecte enregistrée.</div>`;
+    return;
+  }
+
+  state.collectes.slice(0, 50).forEach(c => {
+    const d = new Date(c.date_debut);
+    const badge = c.statut === "LOCAL" ? "⏳ local" : "✔️ sync";
+    const div = document.createElement("div");
+    div.className = "listItem";
+    div.innerHTML = `
+      <div class="rowBetween">
+        <div class="strong">${d.toLocaleDateString("fr-FR")} – ${escapeHtml(c.secteur)}</div>
+        <div class="strong">${c.total}</div>
+      </div>
+      <div class="small">${escapeHtml(c.agent)} • ${badge}</div>
+    `;
+    historyList.appendChild(div);
+  });
+}
+
+function buildCSV(collectes) {
+  const headers = [
+    "collecte_id","agent","secteur","date_debut","date_fin","total","statut"
+  ];
+
+  // Add item columns
+  const itemIds = [];
+  GROUPS.forEach(g => g.items.forEach(it => itemIds.push(it.id)));
+  const cols = headers.concat(itemIds);
+
+  const lines = [cols.join(",")];
+
+  collectes.forEach(c => {
+    const base = [
+      c.collecte_id,
+      c.agent,
+      c.secteur,
+      c.date_debut,
+      c.date_fin || "",
+      String(c.total || 0),
+      c.statut || ""
+    ].map(csvCell);
+
+    const detailCells = itemIds.map(id => csvCell(String((c.details && c.details[id]) || 0)));
+    lines.push(base.concat(detailCells).join(","));
+  });
+
+  return lines.join("\n");
+}
+
+function csvCell(v) {
+  const s = String(v ?? "");
+  if (/[",\n]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
+  return s;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (m) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
+{
+  "name": "Comptage Déchets Grenoble",
+  "short_name": "Déchets",
+  "start_url": "./",
+  "display": "standalone",
+  "background_color": "#f6f7f9",
+  "theme_color": "#ffffff",
+  "icons": [
+    { "src": "icon-192.png", "sizes": "192x192", "type": "image/png" },
+    { "src": "icon-512.png", "sizes": "512x512", "type": "image/png" }
+  ]
+}
+const CACHE_NAME = "grenoble-dechets-v09";
+const ASSETS = [
+  "./",
+  "./index.html",
+  "./styles.css",
+  "./app.js",
+  "./manifest.json"
+  // icons are optional; add if you upload them
+];
+
+self.addEventListener("install", (event) => {
+  event.waitUntil(
+    caches.open(CACHE_NAME).then((cache) => cache.addAll(ASSETS))
+  );
+  self.skipWaiting();
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(
+    caches.keys().then((keys) =>
+      Promise.all(keys.map((k) => (k !== CACHE_NAME ? caches.delete(k) : null)))
+    )
+  );
+  self.clients.claim();
+});
+
+self.addEventListener("fetch", (event) => {
+  const req = event.request;
+  event.respondWith(
+    caches.match(req).then((cached) => cached || fetch(req).catch(() => caches.match("./")))
+  );
+});
