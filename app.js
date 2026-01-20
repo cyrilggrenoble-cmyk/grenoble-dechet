@@ -6,8 +6,8 @@ const SECTEURS = [
   "Grenoble – Secteur 1",
   "Grenoble – Secteur 2",
   "Grenoble – Secteur 3",
-  "Grenoble – Centre-ville",
-  "Grenoble – Presqu'île",
+  "Grenoble – Secteur 4",
+  "Grenoble – Secteur 5",
 ];
 
 const GROUPS = [
@@ -113,11 +113,6 @@ const btnSave = document.getElementById("btnSave");
 const historyList = document.getElementById("historyList");
 const btnBackHome = document.getElementById("btnBackHome");
 
-const modal = document.getElementById("modal");
-const btnSettings = document.getElementById("btnSettings");
-const btnCloseModal = document.getElementById("btnCloseModal");
-const btnReset = document.getElementById("btnReset");
-
 // Init UI
 agentInput.value = state.agent || "";
 SECTEURS.forEach(s => {
@@ -143,21 +138,6 @@ function show(view) {
 
 function openModal() { modal.classList.remove("hidden"); }
 function closeModal() { modal.classList.add("hidden"); }
-
-btnSettings.addEventListener("click", openModal);
-btnCloseModal.addEventListener("click", closeModal);
-modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
-
-btnReset.addEventListener("click", () => {
-  if (!confirm("Réinitialiser toutes les données locales ?")) return;
-  localStorage.removeItem(STORAGE_KEY);
-  state = { agent: "", collectes: [] };
-  current = null;
-  agentInput.value = "";
-  secteurSelect.selectedIndex = 0;
-  closeModal();
-  show(viewHome);
-});
 
 btnStart.addEventListener("click", () => {
   const agent = agentInput.value.trim();
