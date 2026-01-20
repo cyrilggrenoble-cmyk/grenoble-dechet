@@ -345,7 +345,7 @@ function renderHistory() {
 }
 
 function buildCSV(collectes) {
-  // Export OFFICIEL "Grille PU" (1 ligne = 1 collecte)
+  // Export OFFICIEL "Grille PU" (1 colonne = 1 collecte)
   // Conforme à l'ordre du fichier: Grilles Relevé_Interne PU2026.ods
 
   const cols = [
