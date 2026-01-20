@@ -1,0 +1,406 @@
+/* Comptage Déchets – PWA prototype (local only) */
+
+const STORAGE_KEY = "grenoble_dechets_v09";
+
+const SECTEURS = [
+  "Grenoble – Secteur 1",
+  "Grenoble – Secteur 2",
+  "Grenoble – Secteur 3",
+  "Grenoble – Centre-ville",
+  "Grenoble – Presqu'île",
+];
+
+const GROUPS = [
+  {
+    id: "dejections",
+    title: "Déjections & Dépôts",
+    tone: "#f6d8b8",
+    items: [
+      { id: "dejections_canines", name: "Déjections canines", unit: "1 unité = 1 crotte" },
+      { id: "depots_sauvages", name: "Dépôts sauvages", unit: "1 unité = 1 dépôt" },
+      { id: "sacs_ordures", name: "Sacs d’ordures", unit: "1 unité = 1 sac" },
+    ],
+  },
+  {
+    id: "papiers",
+    title: "Papiers",
+    tone: "#dbeafe",
+    items: [
+      { id: "papiers_a5", name: "Papiers / journaux > A5", unit: "1 unité = 10 papiers" },
+      { id: "petits_papiers", name: "Petits papiers < A5", unit: "1 unité = 10 papiers" },
+    ],
+  },
+  {
+    id: "verre_megots",
+    title: "Verre & Mégots",
+    tone: "#dcfce7",
+    items: [
+      { id: "verre_debris", name: "Verre & débris", unit: "1 unité = 1 poignée" },
+      { id: "megots", name: "Mégots", unit: "1 unité = 10 mégots / m²" },
+    ],
+  },
+  {
+    id: "alimentaire_chimique",
+    title: "Alimentaire & Chimique",
+    tone: "#fde68a",
+    items: [
+      { id: "dechets_alimentaires", name: "Déchets alimentaires", unit: "1 unité = 1 tas" },
+      { id: "protoxyde", name: "Cartouches protoxyde", unit: "1 unité = 1 cartouche" },
+    ],
+  },
+  {
+    id: "sols_vegetaux",
+    title: "Sols & Végétaux",
+    tone: "#e9d5ff",
+    items: [
+      { id: "souillures", name: "Souillures adhérentes", unit: "1 unité = 20x20 cm" },
+      { id: "feuilles", name: "Feuilles mortes", unit: "1 unité = 1 m²" },
+    ],
+  },
+];
+
+function uid() {
+  // simple unique id (not crypto)
+  return "c_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
+}
+
+function loadState() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (!raw) return { agent: "", collectes: [] };
+    const parsed = JSON.parse(raw);
+    if (!parsed || typeof parsed !== "object") return { agent: "", collectes: [] };
+    parsed.collectes ||= [];
+    parsed.agent ||= "";
+    return parsed;
+  } catch {
+    return { agent: "", collectes: [] };
+  }
+}
+
+function saveState(state) {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+}
+
+let state = loadState();
+
+let current = null; // current collecte draft
+
+// Elements
+const viewHome = document.getElementById("viewHome");
+const viewCount = document.getElementById("viewCount");
+const viewReview = document.getElementById("viewReview");
+const viewHistory = document.getElementById("viewHistory");
+
+const agentInput = document.getElementById("agentInput");
+const secteurSelect = document.getElementById("secteurSelect");
+const datetimeMeta = document.getElementById("datetimeMeta");
+
+const btnStart = document.getElementById("btnStart");
+const btnHistory = document.getElementById("btnHistory");
+const btnExport = document.getElementById("btnExport");
+
+const groupsEl = document.getElementById("groups");
+const totalValue = document.getElementById("totalValue");
+const btnEnd = document.getElementById("btnEnd");
+
+const reviewMeta = document.getElementById("reviewMeta");
+const reviewDetails = document.getElementById("reviewDetails");
+const reviewTotal = document.getElementById("reviewTotal");
+const btnBackToCount = document.getElementById("btnBackToCount");
+const btnSave = document.getElementById("btnSave");
+
+const historyList = document.getElementById("historyList");
+const btnBackHome = document.getElementById("btnBackHome");
+
+const modal = document.getElementById("modal");
+const btnSettings = document.getElementById("btnSettings");
+const btnCloseModal = document.getElementById("btnCloseModal");
+const btnReset = document.getElementById("btnReset");
+
+// Init UI
+agentInput.value = state.agent || "";
+SECTEURS.forEach(s => {
+  const opt = document.createElement("option");
+  opt.value = s;
+  opt.textContent = s;
+  secteurSelect.appendChild(opt);
+});
+datetimeMeta.textContent = new Date().toLocaleString("fr-FR");
+
+renderGroups();
+updateTotal();
+
+// Service worker
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("./service-worker.js").catch(() => {});
+}
+
+function show(view) {
+  [viewHome, viewCount, viewReview, viewHistory].forEach(v => v.classList.add("hidden"));
+  view.classList.remove("hidden");
+}
+
+function openModal() { modal.classList.remove("hidden"); }
+function closeModal() { modal.classList.add("hidden"); }
+
+btnSettings.addEventListener("click", openModal);
+btnCloseModal.addEventListener("click", closeModal);
+modal.addEventListener("click", (e) => { if (e.target === modal) closeModal(); });
+
+btnReset.addEventListener("click", () => {
+  if (!confirm("Réinitialiser toutes les données locales ?")) return;
+  localStorage.removeItem(STORAGE_KEY);
+  state = { agent: "", collectes: [] };
+  current = null;
+  agentInput.value = "";
+  secteurSelect.selectedIndex = 0;
+  closeModal();
+  show(viewHome);
+});
+
+btnStart.addEventListener("click", () => {
+  const agent = agentInput.value.trim();
+  if (!agent) {
+    alert("Merci de renseigner l’agent.");
+    return;
+  }
+  state.agent = agent;
+  saveState(state);
+
+  current = {
+    collecte_id: uid(),
+    agent,
+    secteur: secteurSelect.value,
+    date_debut: new Date().toISOString(),
+    date_fin: null,
+    details: {},
+  };
+
+  // init counts
+  GROUPS.forEach(g => g.items.forEach(it => (current.details[it.id] = 0)));
+
+  updateTotal();
+  show(viewCount);
+});
+
+btnEnd.addEventListener("click", () => {
+  if (!current) return;
+  current.date_fin = new Date().toISOString();
+  showReview();
+  show(viewReview);
+});
+
+btnBackToCount.addEventListener("click", () => show(viewCount));
+
+btnSave.addEventListener("click", () => {
+  if (!current) return;
+
+  const total = computeTotal(current.details);
+  const collecte = {
+    collecte_id: current.collecte_id,
+    agent: current.agent,
+    secteur: current.secteur,
+    date_debut: current.date_debut,
+    date_fin: current.date_fin,
+    total,
+    details: current.details,
+    statut: "LOCAL", // future: EN_ATTENTE / SYNC_OK
+  };
+
+  state.collectes.unshift(collecte);
+  saveState(state);
+
+  current = null;
+  alert("Collecte enregistrée (local).");
+  show(viewHome);
+});
+
+btnHistory.addEventListener("click", () => {
+  renderHistory();
+  show(viewHistory);
+});
+
+btnBackHome.addEventListener("click", () => show(viewHome));
+
+btnExport.addEventListener("click", () => {
+  const csv = buildCSV(state.collectes);
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = "collectes_grenoble.csv";
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
+});
+
+function renderGroups() {
+  groupsEl.innerHTML = "";
+  GROUPS.forEach(group => {
+    const wrap = document.createElement("div");
+    wrap.className = "group";
+
+    const header = document.createElement("div");
+    header.className = "groupHeader";
+    header.style.background = group.tone;
+    header.innerHTML = `<div>${group.title}</div><div class="small">➕ / ➖</div>`;
+    wrap.appendChild(header);
+
+    const body = document.createElement("div");
+    body.className = "groupBody";
+
+    group.items.forEach(item => {
+      const row = document.createElement("div");
+      row.className = "item";
+
+      const left = document.createElement("div");
+      left.className = "itemLeft";
+      left.innerHTML = `<div class="itemName">${item.name}</div><div class="itemUnit">${item.unit}</div>`;
+
+      const counter = document.createElement("div");
+      counter.className = "counter";
+
+      const minus = document.createElement("button");
+      minus.className = "pillBtn minus";
+      minus.textContent = "−";
+      minus.addEventListener("click", () => change(item.id, -1));
+
+      const val = document.createElement("div");
+      val.className = "countVal";
+      val.id = `val_${item.id}`;
+      val.textContent = "0";
+
+      const plus = document.createElement("button");
+      plus.className = "pillBtn plus";
+      plus.textContent = "+";
+      plus.addEventListener("click", () => change(item.id, +1));
+
+      counter.appendChild(minus);
+      counter.appendChild(val);
+      counter.appendChild(plus);
+
+      row.appendChild(left);
+      row.appendChild(counter);
+      body.appendChild(row);
+    });
+
+    wrap.appendChild(body);
+    groupsEl.appendChild(wrap);
+  });
+}
+
+function change(itemId, delta) {
+  if (!current) return;
+  const next = Math.max(0, (current.details[itemId] || 0) + delta);
+  current.details[itemId] = next;
+  const el = document.getElementById(`val_${itemId}`);
+  if (el) el.textContent = String(next);
+  updateTotal();
+  // little haptic (iOS)
+  if (navigator.vibrate) navigator.vibrate(10);
+}
+
+function computeTotal(details) {
+  return Object.values(details).reduce((a, b) => a + (Number(b) || 0), 0);
+}
+
+function updateTotal() {
+  const total = current ? computeTotal(current.details) : 0;
+  totalValue.textContent = String(total);
+}
+
+function showReview() {
+  if (!current) return;
+
+  const d0 = new Date(current.date_debut);
+  const d1 = new Date(current.date_fin || current.date_debut);
+  const minutes = Math.max(0, Math.round((d1 - d0) / 60000));
+
+  reviewMeta.innerHTML = `
+    <div><span class="strong">Agent :</span> ${escapeHtml(current.agent)}</div>
+    <div><span class="strong">Secteur :</span> ${escapeHtml(current.secteur)}</div>
+    <div><span class="strong">Début :</span> ${d0.toLocaleString("fr-FR")}</div>
+    <div><span class="strong">Durée :</span> ${minutes} min</div>
+  `;
+
+  reviewDetails.innerHTML = "";
+  GROUPS.forEach(g => g.items.forEach(it => {
+    const q = current.details[it.id] || 0;
+    if (q === 0) return;
+    const li = document.createElement("div");
+    li.className = "listItem";
+    li.innerHTML = `<div class="rowBetween"><div>${escapeHtml(it.name)}</div><div class="strong">${q}</div></div>
+                    <div class="small">${escapeHtml(it.unit)}</div>`;
+    reviewDetails.appendChild(li);
+  }));
+
+  const total = computeTotal(current.details);
+  reviewTotal.textContent = String(total);
+}
+
+function renderHistory() {
+  historyList.innerHTML = "";
+  if (!state.collectes.length) {
+    historyList.innerHTML = `<div class="meta">Aucune collecte enregistrée.</div>`;
+    return;
+  }
+
+  state.collectes.slice(0, 50).forEach(c => {
+    const d = new Date(c.date_debut);
+    const badge = c.statut === "LOCAL" ? "⏳ local" : "✔️ sync";
+    const div = document.createElement("div");
+    div.className = "listItem";
+    div.innerHTML = `
+      <div class="rowBetween">
+        <div class="strong">${d.toLocaleDateString("fr-FR")} – ${escapeHtml(c.secteur)}</div>
+        <div class="strong">${c.total}</div>
+      </div>
+      <div class="small">${escapeHtml(c.agent)} • ${badge}</div>
+    `;
+    historyList.appendChild(div);
+  });
+}
+
+function buildCSV(collectes) {
+  const headers = [
+    "collecte_id","agent","secteur","date_debut","date_fin","total","statut"
+  ];
+
+  // Add item columns
+  const itemIds = [];
+  GROUPS.forEach(g => g.items.forEach(it => itemIds.push(it.id)));
+  const cols = headers.concat(itemIds);
+
+  const lines = [cols.join(",")];
+
+  collectes.forEach(c => {
+    const base = [
+      c.collecte_id,
+      c.agent,
+      c.secteur,
+      c.date_debut,
+      c.date_fin || "",
+      String(c.total || 0),
+      c.statut || ""
+    ].map(csvCell);
+
+    const detailCells = itemIds.map(id => csvCell(String((c.details && c.details[id]) || 0)));
+    lines.push(base.concat(detailCells).join(","));
+  });
+
+  return lines.join("\n");
+}
+
+function csvCell(v) {
+  const s = String(v ?? "");
+  if (/[",\n]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
+  return s;
+}
+
+function escapeHtml(str) {
+  return String(str).replace(/[&<>"']/g, (m) => ({
+    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+  }[m]));
+}
