@@ -140,9 +140,10 @@ if ("serviceWorker" in navigator) {
 }
 
 function show(view) {
-  [viewHome, viewCount, viewReview, viewHistory].forEach(v => v.classList.add("hidden"));
+  [viewHome, viewCount, viewReview, viewHistory, viewHistoryDetail].forEach(v => v.classList.add("hidden"));
   view.classList.remove("hidden");
 }
+
 
 function openModal() { modal.classList.remove("hidden"); }
 function closeModal() { modal.classList.add("hidden"); }
