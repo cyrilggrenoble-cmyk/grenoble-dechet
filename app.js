@@ -515,13 +515,11 @@ function buildCSV(collectes) {
 
   return lines.join("\n");
 }
-
 function csvCell(v) {
   const s = String(v ?? "");
   if (/[",\n]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
   return s;
 }
-
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (m) => ({
     "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
