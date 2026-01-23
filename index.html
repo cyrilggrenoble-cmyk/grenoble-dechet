@@ -13,6 +13,7 @@
 
   <link rel="stylesheet" href="styles.css" />
 </head>
+
 <body>
   <header class="topbar">
     <div class="brand">
@@ -22,24 +23,20 @@
         <div class="subtitle">Grenoble – prototype</div>
       </div>
     </div>
-  
   </header>
 
   <main class="container">
-    <!-- VIEW: HOME -->
+
+    <!-- ================= HOME ================= -->
     <section id="viewHome" class="view">
       <div class="card">
         <div class="h">Agent</div>
-        <div class="row">
-          <input id="agentInput" class="input" placeholder="Nom Prénom (ou ID)" autocomplete="off" />
-        </div>
+        <input id="agentInput" class="input" placeholder="Nom Prénom (ou ID)" autocomplete="off" />
       </div>
 
       <div class="card">
         <div class="h">Secteur</div>
-        <div class="row">
-          <select id="secteurSelect" class="select"></select>
-        </div>
+        <select id="secteurSelect" class="select"></select>
         <div class="meta" id="datetimeMeta"></div>
       </div>
 
@@ -51,11 +48,13 @@
       </div>
 
       <p class="hint">
-        Astuce Android : ouvre dans Chrome → Partager → “Ajouter à l’écran d’accueil”.
+        Astuce Android : Chrome → Partager → « Ajouter à l’écran d’accueil »
       </p>
+
+      <button id="btnReset" class="btn danger">Réinitialiser les données</button>
     </section>
 
-    <!-- VIEW: COUNT -->
+    <!-- ================= COUNT ================= -->
     <section id="viewCount" class="view hidden">
       <div class="totalBox">
         <div class="totalLabel">TOTAL DÉCHETS</div>
@@ -69,7 +68,7 @@
       </div>
     </section>
 
-    <!-- VIEW: REVIEW -->
+    <!-- ================= REVIEW ================= -->
     <section id="viewReview" class="view hidden">
       <div class="card">
         <div class="h">Récap collecte</div>
@@ -79,6 +78,7 @@
       <div class="card">
         <div class="h">Détails</div>
         <div id="reviewDetails" class="list"></div>
+
         <div class="divider"></div>
         <div class="rowBetween">
           <div class="strong">TOTAL</div>
@@ -92,46 +92,35 @@
       </div>
     </section>
 
-    <!-- VIEW: HISTORY -->
+    <!-- ================= HISTORY ================= -->
     <section id="viewHistory" class="view hidden">
       <div class="card">
         <div class="h">Historique</div>
         <div id="historyList" class="list"></div>
       </div>
+
       <button id="btnBackHome" class="btn">Retour accueil</button>
     </section>
 
-        <button id="btnReset" class="btn danger">Réinitialiser les données</button>
+    <!-- ================= HISTORY DETAIL ================= -->
+    <section id="viewHistoryDetail" class="view hidden">
+      <div class="topBar">
+        <button id="btnBackHistory" class="btnGhost">← Retour</button>
+        <div class="title">Détail collecte</div>
+        <div style="width:42px"></div>
       </div>
-    </div>
+
+      <div class="card">
+        <div id="historyDetailMeta" class="meta"></div>
+      </div>
+
+      <div id="historyDetailItems"></div>
+    </section>
+
   </main>
-<section id="viewHistoryDetail" class="view hidden">
-  <div class="topBar">
-    <button id="btnBackHistory" class="btnGhost">← Retour</button>
-    <div class="title">Détail collecte</div>
-    <div style="width:42px"></div>
-  </div>
-
-  <div class="card">
-    <div id="historyDetailMeta" class="meta"></div>
-  </div>
-
-  <div id="historyDetailItems"></div>
-</section>
 
   <script src="app.js"></script>
 </body>
 </html>
-<section id="viewHistoryDetail" class="view hidden">
-  <div class="topBar">
-    <button id="btnBackToHistory" class="btn">← Retour</button>
-    <div class="title">Détail collecte</div>
-  </div>
 
-  <div id="historyDetailMeta" class="card"></div>
-  <div id="historyDetailDetails"></div>
-  <div class="card rowBetween">
-    <div class="strong">Total</div>
-    <div id="historyDetailTotal" class="strong">0</div>
-  </div>
-</section>
+ 
