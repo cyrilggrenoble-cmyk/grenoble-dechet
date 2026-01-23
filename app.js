@@ -330,7 +330,7 @@ function showReview() {
 function renderHistory() {
   historyList.innerHTML = "";
 
-  if (!state.collectes || !state.collectes.length) {
+  if (!state.collectes.length) {
     historyList.innerHTML = `<div class="meta">Aucune collecte enregistrée.</div>`;
     return;
   }
@@ -342,15 +342,27 @@ function renderHistory() {
     const div = document.createElement("div");
     div.className = "listItem";
 
-    div.innerHTML = `
-      <div class="rowBetween">
-        <div class="strong">${d.toLocaleDateString("fr-FR")} – ${escapeHtml(c.secteur)}</div>
-        <div class="strong">${c.total}</div>
-      </div>
-      <div class="small">${escapeHtml(c.agent)} • ${badge}</div>
-    `;
+    const line1 = document.createElement("div");
+    line1.className = "rowBetween";
 
-    // (optionnel) clic -> détail (si fonction existe)
+    const left = document.createElement("div");
+    left.className = "strong";
+    left.textContent = `${d.toLocaleDateString("fr-FR")} – ${c.secteur}`;
+
+    const right = document.createElement("div");
+    right.className = "strong";
+    right.textContent = String(c.total);
+
+    line1.appendChild(left);
+    line1.appendChild(right);
+
+    const line2 = document.createElement("div");
+    line2.className = "small";
+    line2.textContent = `${c.agent} • ${badge}`;
+
+    div.appendChild(line1);
+    div.appendChild(line2);
+
     div.addEventListener("click", () => {
       if (typeof openHistoryDetail === "function") {
         openHistoryDetail(c.collecte_id);
@@ -361,8 +373,6 @@ function renderHistory() {
   });
 }
 
-  historyList.appendChild(div);
-});
 
 function buildCSV(collectes) {
   // Export OFFICIEL "Grille PU" (1 colonne = 1 collecte)
