@@ -1,6 +1,6 @@
 /* Comptage Déchets – PWA prototype (local only) */
 
-const STORAGE_KEY = "grenoble_dechets_v12";
+const STORAGE_KEY = "grenoble_dechets_v09";
 
 const SECTEURS = [
   "Grenoble – Secteur 1",
