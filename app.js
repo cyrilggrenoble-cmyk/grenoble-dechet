@@ -97,9 +97,6 @@ const btnBackHistory = document.getElementById("btnBackHistory");
 const historyDetailMeta = document.getElementById("historyDetailMeta");
 const historyDetailItems = document.getElementById("historyDetailItems");
 
-const viewHistoryDetail = document.getElementById("viewHistoryDetail");
-const historyDetailMeta = document.getElementById("historyDetailMeta");
-
 const agentInput = document.getElementById("agentInput");
 const secteurSelect = document.getElementById("secteurSelect");
 const datetimeMeta = document.getElementById("datetimeMeta");
