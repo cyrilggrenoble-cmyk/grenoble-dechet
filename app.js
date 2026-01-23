@@ -426,7 +426,6 @@ function openHistoryDetail(collecteId) {
         <div class="small">${escapeHtml(it.unit)}</div>
       `;
       block.appendChild(row);
-    });
 
     if (hasAny) {
       historyDetailItems.appendChild(block);
