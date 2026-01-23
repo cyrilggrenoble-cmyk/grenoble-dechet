@@ -92,6 +92,11 @@ const viewHome = document.getElementById("viewHome");
 const viewCount = document.getElementById("viewCount");
 const viewReview = document.getElementById("viewReview");
 const viewHistory = document.getElementById("viewHistory");
+const viewHistoryDetail = document.getElementById("viewHistoryDetail");
+const historyDetailMeta = document.getElementById("historyDetailMeta");
+const historyDetailDetails = document.getElementById("historyDetailDetails");
+const historyDetailTotal = document.getElementById("historyDetailTotal");
+const btnBackToHistory = document.getElementById("btnBackToHistory");
 
 const agentInput = document.getElementById("agentInput");
 const secteurSelect = document.getElementById("secteurSelect");
