@@ -61,7 +61,6 @@ const GROUPS = [
 ];
 
 function uid() {
-  // simple unique id (not crypto)
   return "c_" + Date.now().toString(36) + "_" + Math.random().toString(36).slice(2, 8);
 }
 
@@ -84,8 +83,7 @@ function saveState(state) {
 }
 
 let state = loadState();
-
-let current = null; // current collecte draft
+let current = null;
 
 // Elements
 const viewHome = document.getElementById("viewHome");
@@ -93,6 +91,7 @@ const viewCount = document.getElementById("viewCount");
 const viewReview = document.getElementById("viewReview");
 const viewHistory = document.getElementById("viewHistory");
 const viewHistoryDetail = document.getElementById("viewHistoryDetail");
+
 const btnBackHistory = document.getElementById("btnBackHistory");
 const historyDetailMeta = document.getElementById("historyDetailMeta");
 const historyDetailItems = document.getElementById("historyDetailItems");
@@ -120,7 +119,8 @@ const btnBackHome = document.getElementById("btnBackHome");
 
 // Init UI
 agentInput.value = state.agent || "";
-SECTEURS.forEach(s => {
+secteurSelect.innerHTML = "";
+SECTEURS.forEach((s) => {
   const opt = document.createElement("option");
   opt.value = s;
   opt.textContent = s;
@@ -137,14 +137,13 @@ if ("serviceWorker" in navigator) {
 }
 
 function show(view) {
-  [viewHome, viewCount, viewReview, viewHistory, viewHistoryDetail].forEach(v => v.classList.add("hidden"));
+  [viewHome, viewCount, viewReview, viewHistory, viewHistoryDetail].forEach((v) =>
+    v.classList.add("hidden")
+  );
   view.classList.remove("hidden");
 }
 
-
-function openModal() { modal.classList.remove("hidden"); }
-function closeModal() { modal.classList.add("hidden"); }
-
+// Boutons
 btnStart.addEventListener("click", () => {
   const agent = agentInput.value.trim();
   if (!agent) {
@@ -163,8 +162,7 @@ btnStart.addEventListener("click", () => {
     details: {},
   };
 
-  // init counts
-  GROUPS.forEach(g => g.items.forEach(it => (current.details[it.id] = 0)));
+  GROUPS.forEach((g) => g.items.forEach((it) => (current.details[it.id] = 0)));
 
   updateTotal();
   show(viewCount);
@@ -191,7 +189,7 @@ btnSave.addEventListener("click", () => {
     date_fin: current.date_fin,
     total,
     details: current.details,
-    statut: "LOCAL", // future: EN_ATTENTE / SYNC_OK
+    statut: "LOCAL",
   };
 
   state.collectes.unshift(collecte);
@@ -206,6 +204,7 @@ btnHistory.addEventListener("click", () => {
   renderHistory();
   show(viewHistory);
 });
+
 btnBackHistory.addEventListener("click", () => {
   show(viewHistory);
 });
@@ -215,11 +214,11 @@ btnBackHome.addEventListener("click", () => show(viewHome));
 btnExport.addEventListener("click", () => {
   const csv = buildCSV(state.collectes);
   const BOM = "\uFEFF";
-const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
+  const blob = new Blob([BOM + csv], { type: "text/csv;charset=utf-8;" });
   const url = URL.createObjectURL(blob);
   const a = document.createElement("a");
   a.href = url;
-a.download = "BILAN_PU_collectes.csv";
+  a.download = "BILAN_PU_collectes.csv";
   document.body.appendChild(a);
   a.click();
   a.remove();
@@ -228,7 +227,7 @@ a.download = "BILAN_PU_collectes.csv";
 
 function renderGroups() {
   groupsEl.innerHTML = "";
-  GROUPS.forEach(group => {
+  GROUPS.forEach((group) => {
     const wrap = document.createElement("div");
     wrap.className = "group";
 
@@ -241,7 +240,7 @@ function renderGroups() {
     const body = document.createElement("div");
     body.className = "groupBody";
 
-    group.items.forEach(item => {
+    group.items.forEach((item) => {
       const row = document.createElement("div");
       row.className = "item";
 
@@ -288,7 +287,6 @@ function change(itemId, delta) {
   const el = document.getElementById(`val_${itemId}`);
   if (el) el.textContent = String(next);
   updateTotal();
-  // little haptic (iOS)
   if (navigator.vibrate) navigator.vibrate(10);
 }
 
@@ -316,15 +314,19 @@ function showReview() {
   `;
 
   reviewDetails.innerHTML = "";
-  GROUPS.forEach(g => g.items.forEach(it => {
-    const q = current.details[it.id] || 0;
-    if (q === 0) return;
-    const li = document.createElement("div");
-    li.className = "listItem";
-    li.innerHTML = `<div class="rowBetween"><div>${escapeHtml(it.name)}</div><div class="strong">${q}</div></div>
-                    <div class="small">${escapeHtml(it.unit)}</div>`;
-    reviewDetails.appendChild(li);
-  }));
+  GROUPS.forEach((g) =>
+    g.items.forEach((it) => {
+      const q = current.details[it.id] || 0;
+      if (q === 0) return;
+      const li = document.createElement("div");
+      li.className = "listItem";
+      li.innerHTML = `
+        <div class="rowBetween"><div>${escapeHtml(it.name)}</div><div class="strong">${q}</div></div>
+        <div class="small">${escapeHtml(it.unit)}</div>
+      `;
+      reviewDetails.appendChild(li);
+    })
+  );
 
   const total = computeTotal(current.details);
   reviewTotal.textContent = String(total);
@@ -338,45 +340,29 @@ function renderHistory() {
     return;
   }
 
-  state.collectes.slice(0, 50).forEach(c => {
+  state.collectes.slice(0, 50).forEach((c) => {
     const d = new Date(c.date_debut);
     const badge = c.statut === "LOCAL" ? "⏳ local" : "✔️ sync";
 
     const div = document.createElement("div");
     div.className = "listItem";
+    div.style.cursor = "pointer";
 
-    const line1 = document.createElement("div");
-    line1.className = "rowBetween";
+    div.innerHTML = `
+      <div class="rowBetween">
+        <div class="strong">${d.toLocaleDateString("fr-FR")} – ${escapeHtml(c.secteur)}</div>
+        <div class="strong">${c.total}</div>
+      </div>
+      <div class="small">${escapeHtml(c.agent)} • ${badge}</div>
+    `;
 
-    const left = document.createElement("div");
-    left.className = "strong";
-    left.textContent = `${d.toLocaleDateString("fr-FR")} – ${c.secteur}`;
-
-    const right = document.createElement("div");
-    right.className = "strong";
-    right.textContent = String(c.total);
-
-    line1.appendChild(left);
-    line1.appendChild(right);
-
-    const line2 = document.createElement("div");
-    line2.className = "small";
-    line2.textContent = `${c.agent} • ${badge}`;
-
-    div.appendChild(line1);
-    div.appendChild(line2);
-
-    div.addEventListener("click", () => {
-      if (typeof openHistoryDetail === "function") {
-        openHistoryDetail(c.collecte_id);
-      }
-    });
-
+    div.addEventListener("click", () => openHistoryDetail(c.collecte_id));
     historyList.appendChild(div);
   });
 }
+
 function openHistoryDetail(collecteId) {
-  const c = state.collectes.find(x => x.collecte_id === collecteId);
+  const c = state.collectes.find((x) => x.collecte_id === collecteId);
   if (!c) {
     alert("Collecte introuvable.");
     return;
@@ -384,20 +370,21 @@ function openHistoryDetail(collecteId) {
 
   const d0 = c.date_debut ? new Date(c.date_debut) : null;
   const d1 = c.date_fin ? new Date(c.date_fin) : null;
-  const duree = (d0 && d1) ? Math.max(0, Math.round((d1 - d0) / 60000)) : "";
+  const duree = d0 && d1 ? Math.max(0, Math.round((d1 - d0) / 60000)) : null;
 
   historyDetailMeta.innerHTML = `
     <div><span class="strong">Agent :</span> ${escapeHtml(c.agent || "")}</div>
     <div><span class="strong">Secteur :</span> ${escapeHtml(c.secteur || "")}</div>
     <div><span class="strong">Date :</span> ${d0 ? d0.toLocaleString("fr-FR") : ""}</div>
-    <div><span class="strong">Durée :</span> ${duree !== "" ? duree + " min" : "-"}</div>
+    <div><span class="strong">Durée :</span> ${duree !== null ? duree + " min" : "-"}</div>
     <div><span class="strong">Total :</span> ${escapeHtml(String(c.total ?? 0))}</div>
   `;
 
   historyDetailItems.innerHTML = "";
 
-  // afficher dans l'ordre des groupes/items de la grille
-  GROUPS.forEach(g => {
+  GROUPS.forEach((g) => {
+    let hasAny = false;
+
     const block = document.createElement("div");
     block.className = "card";
     block.style.borderLeft = `6px solid ${g.tone}`;
@@ -406,12 +393,9 @@ function openHistoryDetail(collecteId) {
     title.className = "strong";
     title.style.marginBottom = "8px";
     title.textContent = g.title;
-
     block.appendChild(title);
 
-    let hasAny = false;
-
-    g.items.forEach(it => {
+    g.items.forEach((it) => {
       const q = (c.details && Number(c.details[it.id])) || 0;
       if (q === 0) return;
       hasAny = true;
@@ -426,6 +410,7 @@ function openHistoryDetail(collecteId) {
         <div class="small">${escapeHtml(it.unit)}</div>
       `;
       block.appendChild(row);
+    });
 
     if (hasAny) {
       historyDetailItems.appendChild(block);
@@ -439,11 +424,7 @@ function openHistoryDetail(collecteId) {
   show(viewHistoryDetail);
 }
 
-
 function buildCSV(collectes) {
-  // Export OFFICIEL "Grille PU" (1 colonne = 1 collecte)
-  // Conforme à l'ordre du fichier: Grilles Relevé_Interne PU2026.ods
-
   const cols = [
     "Mois",
     "Année",
@@ -451,8 +432,6 @@ function buildCSV(collectes) {
     "Nom évaluateur",
     "date et heure de l'évaluation",
     "Durée (min)",
-
-    // Détritus (ordre exact de la grille)
     "déjections canines",
     "dépôts sauvages",
     "sacs d'ordures ménagères",
@@ -463,7 +442,7 @@ function buildCSV(collectes) {
     "déchets alimentaires organiques",
     "cartouche protoxyde",
     "souillures adhérentes (taches)",
-    "feuilles mortes"
+    "feuilles mortes",
   ];
 
   const lines = [cols.join(",")];
@@ -474,7 +453,6 @@ function buildCSV(collectes) {
     const annee = d0 ? String(d0.getFullYear()) : "";
     const dateFR = d0 ? d0.toLocaleString("fr-FR") : "";
 
-    // Durée en minutes (si dispo). Sinon, on calcule si date_fin existe.
     let dureeMin = "";
     if (typeof c.duree_min === "number") {
       dureeMin = String(c.duree_min);
@@ -484,7 +462,6 @@ function buildCSV(collectes) {
       dureeMin = String(mins);
     }
 
-    // Mapping IDs app -> intitulés grille
     const details = c.details || {};
     const get = (id) => String(details[id] ?? 0);
 
@@ -495,8 +472,6 @@ function buildCSV(collectes) {
       c.agent || "",
       dateFR,
       dureeMin,
-
-      // Détritus (ordre exact)
       get("dejections_canines"),
       get("depots_sauvages"),
       get("sacs_ordures"),
@@ -507,7 +482,7 @@ function buildCSV(collectes) {
       get("dechets_alimentaires"),
       get("protoxyde"),
       get("souillures"),
-      get("feuilles")
+      get("feuilles"),
     ].map(csvCell);
 
     lines.push(row.join(","));
@@ -515,13 +490,21 @@ function buildCSV(collectes) {
 
   return lines.join("\n");
 }
+
 function csvCell(v) {
   const s = String(v ?? "");
   if (/[",\n]/.test(s)) return `"${s.replaceAll('"', '""')}"`;
   return s;
 }
+
 function escapeHtml(str) {
   return String(str).replace(/[&<>"']/g, (m) => ({
-    "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    '"': "&quot;",
+    "'": "&#039;",
   }[m]));
 }
+
+
