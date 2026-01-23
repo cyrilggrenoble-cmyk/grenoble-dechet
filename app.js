@@ -209,6 +209,9 @@ btnHistory.addEventListener("click", () => {
   renderHistory();
   show(viewHistory);
 });
+btnBackHistory.addEventListener("click", () => {
+  show(viewHistory);
+});
 
 btnBackHome.addEventListener("click", () => show(viewHome));
 
