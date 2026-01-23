@@ -378,6 +378,70 @@ function renderHistory() {
     historyList.appendChild(div);
   });
 }
+function openHistoryDetail(collecteId) {
+  const c = state.collectes.find(x => x.collecte_id === collecteId);
+  if (!c) {
+    alert("Collecte introuvable.");
+    return;
+  }
+
+  const d0 = c.date_debut ? new Date(c.date_debut) : null;
+  const d1 = c.date_fin ? new Date(c.date_fin) : null;
+  const duree = (d0 && d1) ? Math.max(0, Math.round((d1 - d0) / 60000)) : "";
+
+  historyDetailMeta.innerHTML = `
+    <div><span class="strong">Agent :</span> ${escapeHtml(c.agent || "")}</div>
+    <div><span class="strong">Secteur :</span> ${escapeHtml(c.secteur || "")}</div>
+    <div><span class="strong">Date :</span> ${d0 ? d0.toLocaleString("fr-FR") : ""}</div>
+    <div><span class="strong">Durée :</span> ${duree !== "" ? duree + " min" : "-"}</div>
+    <div><span class="strong">Total :</span> ${escapeHtml(String(c.total ?? 0))}</div>
+  `;
+
+  historyDetailItems.innerHTML = "";
+
+  // afficher dans l'ordre des groupes/items de la grille
+  GROUPS.forEach(g => {
+    const block = document.createElement("div");
+    block.className = "card";
+    block.style.borderLeft = `6px solid ${g.tone}`;
+
+    const title = document.createElement("div");
+    title.className = "strong";
+    title.style.marginBottom = "8px";
+    title.textContent = g.title;
+
+    block.appendChild(title);
+
+    let hasAny = false;
+
+    g.items.forEach(it => {
+      const q = (c.details && Number(c.details[it.id])) || 0;
+      if (q === 0) return;
+      hasAny = true;
+
+      const row = document.createElement("div");
+      row.className = "listItem";
+      row.innerHTML = `
+        <div class="rowBetween">
+          <div>${escapeHtml(it.name)}</div>
+          <div class="strong">${q}</div>
+        </div>
+        <div class="small">${escapeHtml(it.unit)}</div>
+      `;
+      block.appendChild(row);
+    });
+
+    if (hasAny) {
+      historyDetailItems.appendChild(block);
+    }
+  });
+
+  if (!historyDetailItems.children.length) {
+    historyDetailItems.innerHTML = `<div class="meta">Aucun détail enregistré pour cette collecte.</div>`;
+  }
+
+  show(viewHistoryDetail);
+}
 
 
 function buildCSV(collectes) {
