@@ -329,28 +329,37 @@ function showReview() {
 
 function renderHistory() {
   historyList.innerHTML = "";
-  if (!state.collectes.length) {
+
+  if (!state.collectes || !state.collectes.length) {
     historyList.innerHTML = `<div class="meta">Aucune collecte enregistrée.</div>`;
     return;
   }
 
-state.collectes.slice(0, 50).forEach(c => {
-  const d = new Date(c.date_debut);
-  const badge = c.statut === "LOCAL" ? "⏳ local" : "✔️ sync";
+  state.collectes.slice(0, 50).forEach(c => {
+    const d = new Date(c.date_debut);
+    const badge = c.statut === "LOCAL" ? "⏳ local" : "✔️ sync";
 
-  const div = document.createElement("div");
- div.innerHTML = `
-    <div class="rowBetween">
-      <div class="strong">
-        ${d.toLocaleDateString("fr-FR")} – ${escapeHtml(c.secteur)}
+    const div = document.createElement("div");
+    div.className = "listItem";
+
+    div.innerHTML = `
+      <div class="rowBetween">
+        <div class="strong">${d.toLocaleDateString("fr-FR")} – ${escapeHtml(c.secteur)}</div>
+        <div class="strong">${c.total}</div>
       </div>
-      <div class="strong">${c.total}</div>
-    </div>
-    <div class="small">${escapeHtml(c.agent)} • ${badge}</div>
-  `;
-   div.addEventListener("click", () => {
-    openHistoryDetail(c.collecte_id);
+      <div class="small">${escapeHtml(c.agent)} • ${badge}</div>
+    `;
+
+    // (optionnel) clic -> détail (si fonction existe)
+    div.addEventListener("click", () => {
+      if (typeof openHistoryDetail === "function") {
+        openHistoryDetail(c.collecte_id);
+      }
+    });
+
+    historyList.appendChild(div);
   });
+}
 
   historyList.appendChild(div);
 });
