@@ -334,21 +334,26 @@ function renderHistory() {
     return;
   }
 
-  state.collectes.slice(0, 50).forEach(c => {
-    const d = new Date(c.date_debut);
-    const badge = c.statut === "LOCAL" ? "⏳ local" : "✔️ sync";
-    const div = document.createElement("div");
-    div.className = "listItem";
-    div.innerHTML = `
-      <div class="rowBetween">
-        <div class="strong">${d.toLocaleDateString("fr-FR")} – ${escapeHtml(c.secteur)}</div>
-        <div class="strong">${c.total}</div>
+state.collectes.slice(0, 50).forEach(c => {
+  const d = new Date(c.date_debut);
+  const badge = c.statut === "LOCAL" ? "⏳ local" : "✔️ sync";
+
+  const div = document.createElement("div");
+ div.innerHTML = `
+    <div class="rowBetween">
+      <div class="strong">
+        ${d.toLocaleDateString("fr-FR")} – ${escapeHtml(c.secteur)}
       </div>
-      <div class="small">${escapeHtml(c.agent)} • ${badge}</div>
-    `;
-    historyList.appendChild(div);
+      <div class="strong">${c.total}</div>
+    </div>
+    <div class="small">${escapeHtml(c.agent)} • ${badge}</div>
+  `;
+   div.addEventListener("click", () => {
+    openHistoryDetail(c.collecte_id);
   });
-}
+
+  historyList.appendChild(div);
+});
 
 function buildCSV(collectes) {
   // Export OFFICIEL "Grille PU" (1 colonne = 1 collecte)
